@@ -1,0 +1,21 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: <%= ENV["DB_USERNAME"] %>
+  password: <%= ENV["DB_PASSWORD"] %>
+  host: <%= ENV["DB_HOST"] %>
+  port: <%= ENV["DB_PORT"] %>
+
+development:
+  <<: *default
+  database: movie_explorer_app_development
+
+test:
+  <<: *default
+  database: movie_explorer_app_test
+
+production:
+  <<: *default
+  url: <%= ENV["PRODUCTION_DATABASE_URL"] %>
+  database: movie_explorer_db
