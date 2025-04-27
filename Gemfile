@@ -81,3 +81,7 @@ gem 'activeadmin'
 gem 'rack-cors'
 
 gem 'sassc'
+
+gem 'active_model_serializers'
+
+gem 'cloudinary'
