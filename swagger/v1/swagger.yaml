@@ -14,30 +14,54 @@ paths:
       responses:
         '201':
           description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  mobile_number:
+                    type: string
         '422':
           description: Invalid registration request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                password_confirmation:
-                  type: string
-                mobile_number:
-                  type: string
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    mobile_number:
+                      type: string
+                  required:
+                  - name
+                  - email
+                  - password
+                  - mobile_number
               required:
-              - name
-              - email
-              - password
-              - password_confirmation
-              - mobile_number
+              - user
   "/users/sign_in":
     post:
       summary: User login
@@ -47,33 +71,400 @@ paths:
       responses:
         '200':
           description: User logged in successfully
+          content:
+            application/json:
+              examples:
+                success:
+                  value:
+                    id: 1
+                    email: user@example.com
+                    name: Aalek
+                    mobile_number: "+12345678901"
+                    token: some_jwt_token_here
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  mobile_number:
+                    type: string
+                  token:
+                    type: string
         '401':
           description: Unauthorized login attempt
+          content:
+            application/json:
+              examples:
+                unauthorized:
+                  value:
+                    error: Invalid email or password
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                email:
-                  type: string
-                password:
-                  type: string
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+                  required:
+                  - email
+                  - password
               required:
-              - email
-              - password
+              - user
   "/users/sign_out":
     delete:
       summary: User logout
       tags:
       - Authentication
-      security:
-      - BearerAuth: []
       responses:
         '204':
           description: User logged out successfully
+  "/api/v1/current_user":
+    get:
+      summary: Fetch current user
+      tags:
+      - Users
+      responses:
+        '200':
+          description: User details returned
         '401':
-          description: Unauthorized logout attempt
+          description: Unauthorized access
+  "/api/v1/movies":
+    get:
+      summary: List movies
+      tags:
+      - Movies
+      parameters:
+      - name: title
+        in: query
+        description: Filter movies by title (case-insensitive)
+        required: false
+        schema:
+          type: string
+      - name: genre
+        in: query
+        description: Filter movies by genre
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: Page number for pagination
+        required: false
+        schema:
+          type: integer
+          default: 1
+      - name: per_page
+        in: query
+        description: Number of movies per page
+        required: false
+        schema:
+          type: integer
+          default: 10
+      responses:
+        '200':
+          description: List of movies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Movie'
+                  pagination:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                      total_pages:
+                        type: integer
+                      total_count:
+                        type: integer
+                      per_page:
+                        type: integer
+        '404':
+          description: No movies found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No movies found"
+    post:
+      summary: Create a new movie
+      tags:
+      - Movies
+      security:
+      - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                movie[title]:
+                  type: string
+                  description: Title of the movie
+                movie[genre]:
+                  type: string
+                  description: Genre of the movie
+                movie[release_year]:
+                  type: integer
+                  description: Release year of the movie
+                movie[rating]:
+                  type: number
+                  format: float
+                  description: Rating of the movie (0 to 10)
+                movie[director]:
+                  type: string
+                  description: Director of the movie
+                movie[duration]:
+                  type: integer
+                  description: Duration of the movie in minutes
+                movie[description]:
+                  type: string
+                  description: Description of the movie (max 1000 characters)
+                movie[main_lead]:
+                  type: string
+                  description: Main lead actor/actress of the movie
+                movie[streaming_platform]:
+                  type: string
+                  description: Streaming platform (Amazon, Netflix, Hulu, Disney+, HBO)
+                  enum: ["Amazon", "Netflix", "Hulu", "Disney+", "HBO"]
+                movie[premium]:
+                  type: boolean
+                  description: Whether the movie is premium
+                movie[poster]:
+                  type: string
+                  format: binary
+                  description: Poster image file (JPEG or PNG)
+                movie[banner]:
+                  type: string
+                  format: binary
+                  description: Banner image file (JPEG or PNG)
+              required:
+              - movie[title]
+              - movie[genre]
+              - movie[release_year]
+              - movie[director]
+              - movie[duration]
+              - movie[description]
+              - movie[main_lead]
+              - movie[streaming_platform]
+      responses:
+        '201':
+          description: Movie created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie added successfully"
+                  movie:
+                    $ref: '#/components/schemas/Movie'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  "/api/v1/movies/{id}":
+    get:
+      summary: Fetch a movie by ID
+      tags:
+      - Movies
+      parameters:
+      - name: id
+        in: path
+        description: ID of the movie
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Movie details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found"
+    patch:
+      summary: Update a movie
+      tags:
+      - Movies
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: ID of the movie to update
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                movie[title]:
+                  type: string
+                  description: Title of the movie
+                movie[genre]:
+                  type: string
+                  description: Genre of the movie
+                movie[release_year]:
+                  type: integer
+                  description: Release year of the movie
+                movie[rating]:
+                  type: number
+                  format: float
+                  description: Rating of the movie (0 to 10)
+                movie[director]:
+                  type: string
+                  description: Director of the movie
+                movie[duration]:
+                  type: integer
+                  description: Duration of the movie in minutes
+                movie[description]:
+                  type: string
+                  description: Description of the movie (max 1000 characters)
+                movie[main_lead]:
+                  type: string
+                  description: Main lead actor/actress of the movie
+                movie[streaming_platform]:
+                  type: string
+                  description: Streaming platform (Amazon, Netflix, Hulu, Disney+, HBO)
+                  enum: ["Amazon", "Netflix", "Hulu", "Disney+", "HBO"]
+                movie[premium]:
+                  type: boolean
+                  description: Whether the movie is premium
+                movie[poster]:
+                  type: string
+                  format: binary
+                  description: Poster image file (JPEG or PNG)
+                movie[banner]:
+                  type: string
+                  format: binary
+                  description: Banner image file (JPEG or PNG)
+      responses:
+        '200':
+          description: Movie updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+    delete:
+      summary: Delete a movie
+      tags:
+      - Movies
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: ID of the movie to delete
+        required: true
+        schema:
+          type: integer
+      responses:
+        '204':
+          description: Movie deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found"
 servers:
 - url: http://localhost:3000
   description: Local server

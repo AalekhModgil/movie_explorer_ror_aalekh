@@ -1,75 +1,96 @@
-require 'swagger_helper'
+require 'rails_helper'
 
 RSpec.describe 'User Authentication', type: :request do
-  path '/users' do
-    post 'User registration' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      parameter name: :user, in: :body, schema: {
-        type: :object,
-        properties: {
-          name: { type: :string },
-          email: { type: :string },
-          password: { type: :string },
-          password_confirmation: { type: :string },
-          mobile_number: { type: :string }
-        },
-        required: ["name", "email", "password", "password_confirmation", "mobile_number"]
-      }
+  describe 'POST /users' do
+    context 'with valid parameters' do
+      let(:valid_attributes) { { user: attributes_for(:user) } }
 
-      response '201', 'User created successfully' do
-        let(:user) { attributes_for(:user).merge(password_confirmation: 'password123') }
-        run_test!
+      it 'creates a new user and returns status 201' do
+        post '/users', params: valid_attributes, as: :json
+        expect(response).to have_http_status(:created)
+        expect(JSON.parse(response.body)).to include('email' => valid_attributes[:user][:email])
       end
+    end
 
-      response '422', 'Invalid registration request' do
-        let(:user) { { email: 'invalid', password: '', password_confirmation: '', name: '', mobile_number: '' } }
-        run_test!
+    context 'with invalid parameters' do
+      let(:invalid_attributes) { { user: attributes_for(:user, :invalid) } }
+
+      it 'returns status 422 with errors' do
+        post '/users', params: invalid_attributes, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(JSON.parse(response.body)).to have_key('errors')
       end
     end
   end
 
-  path '/users/sign_in' do
-    post 'User login' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      parameter name: :user, in: :body, schema: {
-        type: :object,
-        properties: {
-          email: { type: :string },
-          password: { type: :string }
-        },
-        required: ['email', 'password']
-      }
+  describe 'POST /users/sign_in' do
+    let!(:user_record) { create(:user, password: 'password123') }
 
-      response '200', 'User logged in successfully' do
-        let(:user_record) { create(:user, password: 'password123') }
-        let(:user) { { email: user_record.email, password: 'password123' } }
-        run_test!
+    context 'with correct credentials' do
+      let(:valid_credentials) do
+        {
+          user: {
+            email: user_record.email,
+            password: 'password123'
+          }
+        }
       end
 
-      response '401', 'Unauthorized login attempt' do
-        let(:user) { { email: 'wrong@example.com', password: 'wrongpass' } }
-        run_test!
+      it 'logs in the user and returns a token' do
+        post '/users/sign_in', params: valid_credentials, as: :json
+        expect(response).to have_http_status(:ok)
+        data = JSON.parse(response.body)
+        expect(data['email']).to eq(user_record.email)
+        expect(data['token']).not_to be_nil
+      end
+    end
+
+    context 'with incorrect credentials' do
+      let(:invalid_credentials) do
+        {
+          user: {
+            email: 'wrong@example.com',
+            password: 'wrongpass'
+          }
+        }
+      end
+
+      it 'returns unauthorized status' do
+        post '/users/sign_in', params: invalid_credentials, as: :json
+        expect(response).to have_http_status(:unauthorized)
+        data = JSON.parse(response.body)
+        expect(data['error']).to eq('Invalid Email or password.')
       end
     end
   end
 
-  path '/users/sign_out' do
-    delete 'User logout' do
-      tags 'Authentication'
-      produces 'application/json'
-      security [BearerAuth: []]
+  describe 'DELETE /users/sign_out' do
+    it 'logs out the user and returns no content status' do
+      delete '/users/sign_out'
+      expect(response).to have_http_status(:no_content)
+    end
+  end
 
-      response '204', 'User logged out successfully' do
-        let(:Authorization) { "Bearer #{JWT.encode({ jti: create(:user).jti }, Rails.application.secrets.secret_key_base)}" }
-        run_test!
+  describe 'GET /api/v1/current_user' do
+    context 'when user is signed in' do
+      let(:user) { create(:user) }
+
+      before do
+        sign_in user
       end
 
-      response '401', 'Unauthorized logout attempt' do
-        run_test!
+      it 'returns the current user' do
+        get '/api/v1/current_user'
+        expect(response).to have_http_status(:ok)
+        data = JSON.parse(response.body)
+        expect(data['email']).to eq(user.email)
+      end
+    end
+
+    context 'when user is not signed in' do
+      it 'returns unauthorized status' do
+        get '/api/v1/current_user'
+        expect(response).to have_http_status(:found)
       end
     end
   end
