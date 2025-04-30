@@ -476,3 +476,46 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    Movie:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        genre:
+          type: string
+        release_year:
+          type: integer
+        rating:
+          type: number
+          format: float
+        director:
+          type: string
+        duration:
+          type: integer
+        description:
+          type: string
+        main_lead:
+          type: string
+        streaming_platform:
+          type: string
+        premium:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - title
+      - genre
+      - release_year
+      - director
+      - duration
+      - description
+      - main_lead
+      - streaming_platform
