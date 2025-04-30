@@ -1,0 +1,87 @@
+---
+openapi: 3.0.1
+info:
+  title: API V1
+  version: v1
+  description: API for managing users and movies
+paths:
+  "/users":
+    post:
+      summary: User registration
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '201':
+          description: User created successfully
+        '422':
+          description: Invalid registration request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+                mobile_number:
+                  type: string
+              required:
+              - name
+              - email
+              - password
+              - password_confirmation
+              - mobile_number
+  "/users/sign_in":
+    post:
+      summary: User login
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '200':
+          description: User logged in successfully
+        '401':
+          description: Unauthorized login attempt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+              - email
+              - password
+  "/users/sign_out":
+    delete:
+      summary: User logout
+      tags:
+      - Authentication
+      security:
+      - BearerAuth: []
+      responses:
+        '204':
+          description: User logged out successfully
+        '401':
+          description: Unauthorized logout attempt
+servers:
+- url: http://localhost:3000
+  description: Local server
+- url: https://movie-explorer-ror-aalekh-2ewg.onrender.com
+  description: Production server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
