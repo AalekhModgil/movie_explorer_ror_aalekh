@@ -1,5 +1,5 @@
 class ApplicationController < ActionController::Base
-  respond_to :json
+  before_action :set_default_response_format
 
   protected
 
@@ -9,5 +9,11 @@ class ApplicationController < ActionController::Base
     else
       super
     end
+  end
+
+  private
+
+  def set_default_response_format
+    request.format = :json if request.path.start_with?('/api')
   end
 end
