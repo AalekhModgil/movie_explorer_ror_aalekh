@@ -6,42 +6,41 @@ FactoryBot.define do
     rating { Faker::Number.between(from: 0, to: 10) }
     director { Faker::Name.name }
     duration { Faker::Number.between(from: 60, to: 240) }
-    streaming_platform { %w[Amazon Netflix Hulu Disney+ HBO].sample }
-    main_lead { Faker::Name.name }
     description { Faker::Lorem.paragraph(sentence_count: 5)[0...1000] }
-    premium { false }
+    main_lead { Faker::Name.name }
+    streaming_platform { %w[Amazon Netflix Hulu Disney+ HBO].sample }
+    premium { [true, false].sample }
 
-    # Trait for premium movies
-    trait :premium do
-      premium { true }
+    # Attach the poster and banner using the correct file paths
+    after(:build) do |movie|
+      movie.poster.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg')),
+        filename: 'poster.jpg',
+        content_type: 'image/jpeg'
+      )
+      movie.banner.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'banner.jpg')),
+        filename: 'banner.jpg',
+        content_type: 'image/jpeg'
+      )
     end
 
-    # Trait for invalid movie data
     trait :invalid do
       title { '' }
       genre { '' }
       release_year { 1800 } # Invalid: before 1881
-      rating { 11 } # Invalid: greater than 10
+      rating { 11 } # Invalid: exceeds 10
       director { '' }
-      duration { 0 } # Invalid: must be greater than 0
-      streaming_platform { 'InvalidPlatform' }
-      main_lead { '' }
+      duration { 0 } # Invalid: must be > 0
       description { '' }
+      main_lead { '' }
+      streaming_platform { 'InvalidPlatform' } # Invalid: not in allowed list
     end
 
-    # Trait to attach poster and banner
-    trait :with_attachments do
+    trait :without_attachments do
       after(:build) do |movie|
-        movie.poster.attach(
-          io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg')),
-          filename: 'poster.jpg',
-          content_type: 'image/jpeg'
-        )
-        movie.banner.attach(
-          io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'banner.jpg')),
-          filename: 'banner.jpg',
-          content_type: 'image/jpeg'
-        )
+        movie.poster.detach
+        movie.banner.detach
       end
     end
   end
