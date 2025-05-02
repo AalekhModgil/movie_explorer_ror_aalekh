@@ -15,6 +15,7 @@ class Movie < ApplicationRecord
   validate :banner_content_type, if: :banner_attached?
 
   scope :premium, -> { where(premium: true) }
+  scope :accessible_to_user, ->(user) { user&.premium_access ? all : where(premium: false) }
 
   def poster_attached?
     poster.attached?

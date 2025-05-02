@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_04_28_061731) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_02_065810) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -64,6 +64,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_28_061731) do
     t.index ["email"], name: "index_admin_users_on_email", unique: true
   end
 
+  create_table "jwt_blacklists", force: :cascade do |t|
+    t.string "jti", null: false
+    t.datetime "exp", null: false
+    t.index ["jti"], name: "index_jwt_blacklists_on_jti", unique: true
+  end
+
   create_table "movies", force: :cascade do |t|
     t.string "title"
     t.string "genre"
@@ -85,6 +91,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_28_061731) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "stripe_customer_id"
+    t.string "stripe_subscription_id"
     t.index ["user_id"], name: "index_subscriptions_on_user_id"
   end
 
