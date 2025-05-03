@@ -2,7 +2,8 @@ module Api
   module V1
     class MoviesController < ApplicationController
       skip_before_action :verify_authenticity_token
-      before_action :authenticate_user!, only: [:create, :show, :update, :destroy]
+      # before_action :authenticate_user!, only: [:create, :show, :update, :destroy]
+      before_action :authenticate_user!, only: [:create, :update, :destroy]
       before_action :ensure_supervisor, only: [:create, :update, :destroy]
 
       def index
@@ -34,18 +35,28 @@ module Api
         end
       end
 
+      # def show
+      #   movie = Movie.find_by(id: params[:id])
+      #   if movie
+      #     if can_access_movie?(movie)
+      #       render json: ::MovieSerializer.new(movie).serializable_hash, status: :ok
+      #     else
+      #       render json: { error: 'Access denied. Please upgrade your subscription.' }, status: :forbidden
+      #     end
+      #   else
+      #     render json: { error: "Movie not found" }, status: :not_found
+      #   end
+      # end
+      
       def show
         movie = Movie.find_by(id: params[:id])
         if movie
-          if can_access_movie?(movie)
             render json: ::MovieSerializer.new(movie).serializable_hash, status: :ok
-          else
-            render json: { error: 'Access denied. Please upgrade your subscription.' }, status: :forbidden
-          end
         else
           render json: { error: "Movie not found" }, status: :not_found
         end
       end
+
 
       def create
         movie = Movie.new(movie_params.except(:poster, :banner))

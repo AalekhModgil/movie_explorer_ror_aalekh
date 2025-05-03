@@ -23,6 +23,20 @@ ActiveAdmin.register_page "Dashboard" do
           end
         end
       end
+
+      column do
+        panel "Movie Statistics" do
+          ul do
+            li "Total Movies: #{Movie.count}"
+            li "Premium Movies: #{Movie.where(premium: true).count}"
+            li "Non-Premium Movies: #{Movie.where(premium: false).count}"
+            li "Average Rating: #{Movie.average(:rating)&.round(2) || 'N/A'}"
+            li "Movies by Genre: #{Movie.group(:genre).count.to_h.to_s}"
+            li "Recent Movies: #{Movie.order(release_year: :desc).limit(5).pluck(:title).join(', ')}"
+            li "Streaming Platforms: #{Movie.group(:streaming_platform).count.to_h.to_s}"
+          end
+        end
+      end
     end
   end
 end
