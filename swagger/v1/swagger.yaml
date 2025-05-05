@@ -21,11 +21,12 @@ paths:
                 properties:
                   id:
                     type: integer
-                  name:
-                    type: string
                   email:
                     type: string
-                  mobile_number:
+                  role:
+                    type: string
+                    enum: [user, supervisor]
+                  token:
                     type: string
         '422':
           description: Invalid registration request
@@ -78,8 +79,7 @@ paths:
                   value:
                     id: 1
                     email: user@example.com
-                    name: Aalek
-                    mobile_number: "+12345678901"
+                    role: user
                     token: some_jwt_token_here
               schema:
                 type: object
@@ -88,10 +88,9 @@ paths:
                     type: integer
                   email:
                     type: string
-                  name:
+                  role:
                     type: string
-                  mobile_number:
-                    type: string
+                    enum: [user, supervisor]
                   token:
                     type: string
         '401':
@@ -130,19 +129,114 @@ paths:
       summary: User logout
       tags:
       - Authentication
+      security:
+      - BearerAuth: []
       responses:
-        '204':
+        '200':
           description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signed out successfully."
+        '401':
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid or expired token"
   "/api/v1/current_user":
     get:
       summary: Fetch current user
       tags:
       - Users
+      security:
+      - BearerAuth: []
       responses:
         '200':
           description: User details returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  mobile_number:
+                    type: string
+                  role:
+                    type: string
+                    enum: [user, supervisor]
         '401':
           description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No token provided. Please sign in."
+  "/api/v1/update_device_token":
+    post:
+      summary: Update user device token
+      tags:
+      - Users
+      security:
+      - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_token:
+                  type: string
+              required:
+              - device_token
+      responses:
+        '200':
+          description: Device token updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Device token updated successfully"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No token provided. Please sign in."
   "/api/v1/movies":
     get:
       summary: List movies
@@ -291,7 +385,17 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Unauthorized"
+                    example: "No token provided. Please sign in."
+        '403':
+          description: Forbidden - Supervisor access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Forbidden: Supervisor access required"
         '422':
           description: Invalid request
           content:
@@ -407,7 +511,17 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Unauthorized"
+                    example: "No token provided. Please sign in."
+        '403':
+          description: Forbidden - Supervisor access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Forbidden: Supervisor access required"
         '404':
           description: Movie not found
           content:
@@ -443,8 +557,16 @@ paths:
         schema:
           type: integer
       responses:
-        '204':
+        '200':
           description: Movie deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie deleted successfully"
         '401':
           description: Unauthorized
           content:
@@ -454,7 +576,17 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Unauthorized"
+                    example: "No token provided. Please sign in."
+        '403':
+          description: Forbidden - Supervisor access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Forbidden: Supervisor access required"
         '404':
           description: Movie not found
           content:

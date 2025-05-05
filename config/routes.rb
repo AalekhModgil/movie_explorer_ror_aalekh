@@ -18,6 +18,8 @@ Rails.application.routes.draw do
         end
       end
       post 'webhooks/stripe', to: 'webhooks#stripe'
+      post 'update_device_token', to: 'users#update_device_token'
+      post 'toggle_notifications', to: 'users#toggle_notifications'
     end
   end
 end

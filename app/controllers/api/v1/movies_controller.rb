@@ -63,6 +63,7 @@ module Api
         attach_files(movie)
 
         if movie.save
+          send_new_movie_notification(movie)
           render json: {
             message: "Movie added successfully",
             movie: ::MovieSerializer.new(movie).serializable_hash
@@ -90,7 +91,7 @@ module Api
         movie = Movie.find_by(id: params[:id])
         if movie
           movie.destroy
-          head :no_content
+          render json: { message: "Movie deleted successfully" }, status: :ok
         else
           render json: { error: "Movie not found" }, status: :not_found
         end
@@ -138,6 +139,24 @@ module Api
         else
           Rails.logger.info "Access granted: Premium subscription"
           true
+        end
+      end
+
+      def send_new_movie_notification(movie)
+        users = User.where(notifications_enabled: true).where.not(device_token: nil)
+        return if users.empty?
+        device_tokens = users.pluck(:device_token)
+        begin
+          fcm_service = FcmService.new
+          response = fcm_service.send_notification(device_tokens, "New Movie Added!", "#{movie.title} has been added to the Movie Explorer collection.", { movie_id: movie.id.to_s })
+          Rails.logger.info("FCM Response: #{response}")
+          if response[:status_code] == 200
+            Rails.logger.info("FCM Response: #{response}")
+          else
+            Rails.logger.error("FCM Error: #{response[:body]}")
+          end
+        rescue StandardError => e
+          Rails.logger.error("FCM Notification Failed: #{e.message}")
         end
       end
     end
