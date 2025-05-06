@@ -97,3 +97,6 @@ gem "faker"
 gem 'stripe'
 
 gem "fcm"
+
+gem "httparty"
+gem "googleauth"
