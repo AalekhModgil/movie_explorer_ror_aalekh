@@ -5,15 +5,13 @@ require 'stringio'
 
 class FcmService
   def initialize
-    json_string = ENV['FCM_SERVICE_ACCOUNT_JSON']
-    raise 'FCM_SERVICE_ACCOUNT_JSON is not set' if json_string.nil? || json_string.strip.empty?
+    @credentials = Rails.application.credentials.fcm[:service_account]
+    raise 'FCM service account credentials not found' if @credentials.nil?
 
-    begin
-      Rails.logger.info("FCM JSON (first 100 chars): #{json_string[0..100]}...")
-      @credentials = JSON.parse(json_string)
-    rescue JSON::ParserError => e
-      raise "Invalid FCM Service Account JSON format: #{e.message}"
-    end
+    # Convert credentials to JSON string for Google Auth
+    json_string = @credentials.to_json
+
+    Rails.logger.info("FCM JSON (first 100 chars): #{json_string[0..100]}...")
 
     # Initialize Google Auth credentials
     @authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
@@ -32,7 +30,7 @@ class FcmService
     access_token = authorizer.fetch_access_token!['access_token']
     raise 'Failed to fetch access token' if access_token.nil? || access_token.empty?
 
-    url = "https://fcm.googleapis.com/v1/projects/#{@credentials['project_id']}/messages:send"
+    url = "https://fcm.googleapis.com/v1/projects/#{@credentials[:project_id]}/messages:send"
     headers = {
       'Authorization' => "Bearer #{access_token}",
       'Content-Type' => 'application/json'
