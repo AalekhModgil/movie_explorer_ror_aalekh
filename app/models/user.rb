@@ -1,6 +1,6 @@
 class User < ApplicationRecord
   has_one :subscription, dependent: :destroy
-  # after_create :create_default_subscription
+  after_create :create_default_subscription
   include Devise::JWT::RevocationStrategies::JTIMatcher
 
   devise :database_authenticatable, :registerable,
@@ -26,13 +26,13 @@ class User < ApplicationRecord
     [] 
   end
 
-  # def create_default_subscription
-  #   begin 
-  #     customer = Stripe::Customer.create(email: email)
-  #     Subscription.create!(user: self, plan_type: 'free', status: 'active', stripe_customer_id: customer.id)
-  #   rescue Stripe::StripeError => e
-  #     Rails.logger.error("Failed to create Stripe customer for user #{id}: #{e.message}")
-  #     Subscription.create!(user: self, plan_type: 'free', status: 'active')
-  #   end
-  # end
+  def create_default_subscription
+    begin 
+      customer = Stripe::Customer.create(email: email)
+      Subscription.create!(user: self, plan_type: 'basic', status: 'active', stripe_customer_id: customer.id)
+    rescue Stripe::StripeError => e
+      Rails.logger.error("Failed to create Stripe customer for user #{id}: #{e.message}")
+      Subscription.create!(user: self, plan_type: 'basic', status: 'active')
+    end
+  end
 end

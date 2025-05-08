@@ -37,6 +37,19 @@ ActiveAdmin.register_page "Dashboard" do
           end
         end
       end
+
+      column do
+        panel "Subscription Statistics" do
+          ul do
+            li "Total Subscriptions: #{Subscription.count}"
+            li "Active Subscriptions: #{Subscription.where(status: 'active').count}"
+            li "Premium Subscriptions: #{Subscription.where(plan_type: 'premium').count}"
+            li "Basic Subscriptions: #{Subscription.where(plan_type: 'basic').count}"
+            li "Subscriptions by Plan Type: #{Subscription.group(:plan_type).count.to_h.to_s}"
+            li "Unique Subscribers: #{Subscription.distinct.count(:user_id)}"
+          end
+        end
+      end
     end
   end
 end
