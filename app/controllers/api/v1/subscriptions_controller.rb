@@ -24,8 +24,8 @@ class Api::V1::SubscriptionsController < ApplicationController
         user_id: @current_user.id,
         plan_type: plan_type
       },
-      success_url: "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}",
-      # success_url: "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
+      # success_url: "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}",
+      success_url: "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
     )
 
