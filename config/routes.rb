@@ -13,9 +13,8 @@ Rails.application.routes.draw do
       get 'current_user', to: 'users#current'
       resources :subscriptions, only: [:create]
       get 'subscriptions/success', to: 'subscriptions#success'
-      # get 'subscriptions/cancel', to: 'subscriptions#cancel'
+      get 'subscriptions/cancel', to: 'subscriptions#cancel'
       get 'subscriptions/status', to: 'subscriptions#status'
-      # post 'webhooks/stripe', to: 'webhooks#stripe'
       post 'update_device_token', to: 'users#update_device_token'
       post 'toggle_notifications', to: 'users#toggle_notifications'
     end

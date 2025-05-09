@@ -1,5 +1,5 @@
 class Api::V1::SubscriptionsController < ApplicationController
-  before_action :authenticate_user!, except: [:success]
+  before_action :authenticate_user!, except: [:success, :cancel]
   skip_before_action :verify_authenticity_token
 
   def create
@@ -24,8 +24,8 @@ class Api::V1::SubscriptionsController < ApplicationController
         user_id: @current_user.id,
         plan_type: plan_type
       },
-      # success_url: "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}",
-      success_url: "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
+      success_url: "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}",
+      # success_url: "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
     )
 

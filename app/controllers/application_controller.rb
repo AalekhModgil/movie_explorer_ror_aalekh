@@ -5,10 +5,8 @@ class ApplicationController < ActionController::Base
 
   def authenticate_user!
     auth_header = request.headers['Authorization']
-    logger.info "Authenticating with header: #{auth_header}"
   
     if auth_header.blank? || !auth_header.start_with?('Bearer ')
-      logger.info "No valid Bearer token provided"
       render json: { error: 'No token provided. Please sign in.' }, status: :unauthorized
       return
     end
@@ -20,21 +18,17 @@ class ApplicationController < ActionController::Base
       user_id = decoded_token.first['sub']
       
       if JwtBlacklist.exists?(jti: jti)
-        logger.info "Token is blacklisted"
         render json: { error: 'Token has been revoked. Please sign in again.' }, status: :unauthorized
         return
       end
   
       user = User.find_by(id: user_id)
       if user
-        logger.info "Authenticated user: #{user.inspect}"
         @current_user = user
       else
-        logger.info "No user found for token"
         render json: { error: 'Invalid token: User not found.' }, status: :unauthorized
       end
     rescue JWT::DecodeError, JWT::ExpiredSignature => e
-      logger.info "Token decode error: #{e.message}"
       render json: { error: "Invalid or expired token: #{e.message}" }, status: :unauthorized
     end
   end

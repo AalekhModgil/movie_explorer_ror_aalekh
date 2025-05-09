@@ -3,11 +3,6 @@ module Api
     class UsersController < ApplicationController
       before_action :authenticate_user!
       skip_before_action :verify_authenticity_token
-      # skip_before_action :verify_authenticity_token, if: :json_request?
-
-      # def current
-      #   render json: { id: current_user.id, email: current_user.email, role: current_user.role }
-      # end
       
       def current
         if @current_user
