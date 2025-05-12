@@ -69,21 +69,28 @@ RSpec.describe 'Movies API', type: :request do
   describe 'GET /api/v1/movies/:id' do
     let!(:movie) { create(:movie) }
 
-    context 'with valid id' do
+    context 'with valid id and authenticated user' do
       it 'returns the movie' do
-        get "/api/v1/movies/#{movie.id}", as: :json
+        get "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{jwt_token}" }, as: :json
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
         expect(json['title']).to eq(movie.title)
       end
     end
 
-    context 'with invalid id' do
+    context 'with invalid id and authenticated user' do
       it 'returns not found status' do
-        get '/api/v1/movies/999', as: :json
+        get '/api/v1/movies/999', headers: { 'Authorization' => "Bearer #{jwt_token}" }, as: :json
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Movie not found')
+        expect(json['error']).to eq('Movie not found or access denied')
+      end
+    end
+
+    context 'without authentication' do
+      it 'returns unauthorized status' do
+        get "/api/v1/movies/#{movie.id}", as: :json
+        expect(response).to have_http_status(:unauthorized)
       end
     end
   end
