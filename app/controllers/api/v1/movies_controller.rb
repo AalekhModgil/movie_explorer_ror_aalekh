@@ -2,7 +2,7 @@ module Api
   module V1
     class MoviesController < ApplicationController
       skip_before_action :verify_authenticity_token
-      before_action :authenticate_user!, only: [:create, :update, :destroy]
+      before_action :authenticate_user!, only: [:create, :show, :update, :destroy]
       before_action :ensure_supervisor, only: [:create, :update, :destroy]
 
       def index
@@ -35,14 +35,13 @@ module Api
       end
       
       def show
-        movie = Movie.find_by(id: params[:id])
+        movie = Movie.accessible_to_user(@current_user).find_by(id: params[:id])
         if movie
-            render json: ::MovieSerializer.new(movie).serializable_hash, status: :ok
+          render json: ::MovieSerializer.new(movie).serializable_hash, status: :ok
         else
-          render json: { error: "Movie not found" }, status: :not_found
+          render json: { error: "Movie not found or access denied" }, status: :not_found
         end
       end
-
 
       def create
         movie = Movie.new(movie_params.except(:poster, :banner))

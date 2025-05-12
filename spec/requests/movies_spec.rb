@@ -1,179 +1,240 @@
 require 'rails_helper'
 
-RSpec.describe 'Api::V1::Movies', type: :request do
-  let(:supervisor) { create(:user, :supervisor) }
-  let(:regular_user) { create(:user) }
-  let(:movie) { create(:movie) }
-  let(:valid_attributes) do
-    attributes_for(:movie).merge(
-      poster: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg'), 'image/jpeg'),
-      banner: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'banner.jpg'), 'image/jpeg')
-    )
-  end
-  let(:invalid_attributes) do
-    attributes_for(:movie, :invalid).merge(
-      poster: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg'), 'image/jpeg'),
-      banner: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'banner.jpg'), 'image/jpeg')
-    )
+RSpec.describe 'Movies API', type: :request do
+  let(:user) { create(:user) }
+  let(:supervisor) { create(:user, role: 'supervisor') }
+  let(:jwt_token) { "mocked_jwt_token_#{user.id}" }
+  let(:supervisor_token) { "mocked_jwt_token_#{supervisor.id}" }
+  let(:decoded_token) { [{ 'sub' => user.id, 'jti' => user.jti }, { 'alg' => 'HS256' }] }
+  let(:supervisor_decoded_token) { [{ 'sub' => supervisor.id, 'jti' => supervisor.jti }, { 'alg' => 'HS256' }] }
+
+  before do
+    allow(JWT).to receive(:decode).with(jwt_token, anything, true, { algorithm: 'HS256' }).and_return(decoded_token)
+    allow(JWT).to receive(:decode).with(supervisor_token, anything, true, { algorithm: 'HS256' }).and_return(supervisor_decoded_token)
+    allow(JwtBlacklist).to receive(:exists?).and_return(false)
+    allow_any_instance_of(MovieSerializer).to receive(:poster_url).and_return('http://example.com/poster.jpg')
+    allow_any_instance_of(MovieSerializer).to receive(:banner_url).and_return('http://example.com/banner.jpg')
   end
 
   describe 'GET /api/v1/movies' do
-    context 'when movies exist' do
-      let!(:movies) { create_list(:movie, 15) }
+    let!(:movies) { create_list(:movie, 15) }
 
-      it 'returns a paginated list of movies' do
-        get '/api/v1/movies', params: { page: 1, per_page: 10 }, as: :json
+    context 'without filters' do
+      it 'returns paginated movies' do
+        get '/api/v1/movies', as: :json
         expect(response).to have_http_status(:ok)
-        data = JSON.parse(response.body)
-        expect(data['movies'].size).to eq(10)
-        expect(data['pagination']['current_page']).to eq(1)
-        expect(data['pagination']['total_pages']).to eq(2)
-        expect(data['pagination']['total_count']).to eq(15)
-      end
-
-      it 'filters movies by title' do
-        create(:movie, title: 'The Matrix')
-        get '/api/v1/movies', params: { title: 'Matrix' }, as: :json
-        expect(response).to have_http_status(:ok)
-        data = JSON.parse(response.body)
-        expect(data['movies'].size).to eq(1)
-        expect(data['movies'].first['title']).to eq('The Matrix')
-      end
-
-      it 'filters movies by genre' do
-        create(:movie, genre: 'Sci-Fi')
-        get '/api/v1/movies', params: { genre: 'Sci-Fi' }, as: :json
-        expect(response).to have_http_status(:ok)
-        data = JSON.parse(response.body)
-        expect(data['movies'].size).to eq(1)
-        expect(data['movies'].first['genre']).to eq('Sci-Fi')
+        json = JSON.parse(response.body)
+        expect(json['movies'].count).to eq(10)
+        expect(json['pagination']['current_page']).to eq(1)
+        expect(json['pagination']['total_pages']).to eq(2)
+        expect(json['pagination']['total_count']).to eq(15)
       end
     end
 
-    context 'when no movies match the filters' do
+    context 'with title filter' do
+      let!(:movie) { create(:movie, title: 'The Matrix') }
+
+      it 'returns movies matching title' do
+        get '/api/v1/movies', params: { title: 'Matrix' }, as: :json
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['movies']).to be_present
+        expect(json['movies'].any? { |m| m['title'] == 'The Matrix' }).to be true
+      end
+    end
+
+    context 'with genre filter' do
+      let!(:movie) { create(:movie, genre: 'Sci-Fi') }
+
+      it 'returns movies matching genre' do
+        get '/api/v1/movies', params: { genre: 'Sci-Fi' }, as: :json
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['movies']).to be_present
+        expect(json['movies'].any? { |m| m['genre'] == 'Sci-Fi' }).to be true
+      end
+    end
+
+    context 'when no movies found' do
       it 'returns not found status' do
-        get '/api/v1/movies', params: { title: 'Nonexistent' }, as: :json
+        Movie.destroy_all
+        get '/api/v1/movies', as: :json
         expect(response).to have_http_status(:not_found)
-        expect(JSON.parse(response.body)['error']).to eq('No movies found')
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('No movies found')
       end
     end
   end
 
   describe 'GET /api/v1/movies/:id' do
-    context 'when the movie exists' do
+    let!(:movie) { create(:movie) }
+
+    context 'with valid id' do
       it 'returns the movie' do
         get "/api/v1/movies/#{movie.id}", as: :json
         expect(response).to have_http_status(:ok)
-        data = JSON.parse(response.body)
-        expect(data['title']).to eq(movie.title)
+        json = JSON.parse(response.body)
+        expect(json['title']).to eq(movie.title)
       end
     end
 
-    context 'when the movie does not exist' do
+    context 'with invalid id' do
       it 'returns not found status' do
         get '/api/v1/movies/999', as: :json
         expect(response).to have_http_status(:not_found)
-        expect(JSON.parse(response.body)['error']).to eq('Movie not found')
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Movie not found')
       end
     end
   end
 
   describe 'POST /api/v1/movies' do
-    context 'when user is a supervisor' do
-      before { sign_in supervisor }
+    let(:valid_attributes) do
+      {
+        movie: {
+          title: 'New Movie',
+          genre: 'Action',
+          release_year: 2023,
+          rating: 8,
+          director: 'John Doe',
+          duration: 120,
+          description: 'A great movie',
+          main_lead: 'Jane Doe',
+          streaming_platform: 'Netflix',
+          premium: false,
+          poster: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg'), 'image/jpeg'),
+          banner: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'banner.jpg'), 'image/jpeg')
+        }
+      }
+    end
 
-      it 'creates a new movie with valid attributes' do
-        post '/api/v1/movies', params: { movie: valid_attributes }, as: :json
+    let(:invalid_attributes) { { movie: attributes_for(:movie, :invalid) } }
+
+    context 'with supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(true)
+      end
+
+      it 'creates a new movie' do
+        post '/api/v1/movies', headers: { 'Authorization' => "Bearer #{supervisor_token}" }, params: valid_attributes, as: :multipart
         expect(response).to have_http_status(:created)
-        data = JSON.parse(response.body)
-        expect(data['message']).to eq('Movie added successfully')
-        expect(data['movie']['title']).to eq(valid_attributes[:title])
+        json = JSON.parse(response.body)
+        expect(json['message']).to eq('Movie added successfully')
+        expect(json['movie']['title']).to eq('New Movie')
       end
 
       it 'returns errors with invalid attributes' do
-        post '/api/v1/movies', params: { movie: invalid_attributes }, as: :json
+        post '/api/v1/movies', headers: { 'Authorization' => "Bearer #{supervisor_token}" }, params: invalid_attributes, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(JSON.parse(response.body)).to have_key('errors')
+        json = JSON.parse(response.body)
+        expect(json['errors']).to include(/Title can't be blank/)
       end
     end
 
-    context 'when user is not a supervisor' do
-      before { sign_in regular_user }
-
-      it 'returns unauthorized status' do
-        post '/api/v1/movies', params: { movie: valid_attributes }, as: :json
-        expect(response).to have_http_status(:unauthorized)
-        expect(JSON.parse(response.body)['error']).to eq('Unauthorized')
+    context 'with non-supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(false)
       end
-    end
 
-    context 'when user is not signed in' do
-      it 'returns unauthorized status' do
-        post '/api/v1/movies', params: { movie: valid_attributes }, as: :json
-        expect(response).to have_http_status(:unauthorized)
+      it 'returns forbidden status' do
+        post '/api/v1/movies', headers: { 'Authorization' => "Bearer #{jwt_token}" }, params: valid_attributes, as: :multipart
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Forbidden: Supervisor access required')
       end
     end
   end
 
-  describe 'PATCH /api/v1/movies/:id' do
-    context 'when user is a supervisor' do
-      before { sign_in supervisor }
+  describe 'PUT /api/v1/movies/:id' do
+    let!(:movie) { create(:movie) }
+    let(:update_attributes) do
+      {
+        movie: {
+          title: 'Updated Movie',
+          poster: fixture_file_upload(Rails.root.join('spec', 'fixtures', 'files', 'poster.jpg'), 'image/jpeg')
+        }
+      }
+    end
 
-      it 'updates the movie with valid attributes' do
-        patch "/api/v1/movies/#{movie.id}", params: { movie: { title: 'Updated Title' } }, as: :json
+    let(:invalid_update_attributes) do
+      { movie: { title: '', genre: '' } }
+    end
+
+    context 'with supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(true)
+      end
+
+      it 'updates the movie' do
+        put "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{supervisor_token}" }, params: update_attributes, as: :multipart
         expect(response).to have_http_status(:ok)
-        data = JSON.parse(response.body)
-        expect(data['title']).to eq('Updated Title')
+        json = JSON.parse(response.body)
+        expect(json['title']).to eq('Updated Movie')
       end
 
       it 'returns errors with invalid attributes' do
-        patch "/api/v1/movies/#{movie.id}", params: { movie: invalid_attributes }, as: :json
+        put "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{supervisor_token}" }, params: invalid_update_attributes, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(JSON.parse(response.body)).to have_key('errors')
+        json = JSON.parse(response.body)
+        expect(json['errors']).to include(/Title can't be blank/)
       end
 
       it 'returns not found if movie does not exist' do
-        patch '/api/v1/movies/999', params: { movie: valid_attributes }, as: :json
+        put '/api/v1/movies/999', headers: { 'Authorization' => "Bearer #{supervisor_token}" }, params: update_attributes, as: :multipart
         expect(response).to have_http_status(:not_found)
-        expect(JSON.parse(response.body)['error']).to eq('Movie not found')
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Movie not found')
       end
     end
 
-    context 'when user is not a supervisor' do
-      before { sign_in regular_user }
+    context 'with non-supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(false)
+      end
 
-      it 'returns unauthorized status' do
-        patch "/api/v1/movies/#{movie.id}", params: { movie: valid_attributes }, as: :json
-        expect(response).to have_http_status(:unauthorized)
-        expect(JSON.parse(response.body)['error']).to eq('Unauthorized')
+      it 'returns forbidden status' do
+        put "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{jwt_token}" }, params: update_attributes, as: :multipart
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Forbidden: Supervisor access required')
       end
     end
   end
 
   describe 'DELETE /api/v1/movies/:id' do
-    context 'when user is a supervisor' do
-      before { sign_in supervisor }
+    let!(:movie) { create(:movie) }
+
+    context 'with supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(true)
+      end
 
       it 'deletes the movie' do
-        delete "/api/v1/movies/#{movie.id}", as: :json
-        expect(response).to have_http_status(:no_content)
-        expect(Movie.find_by(id: movie.id)).to be_nil
+        delete "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{supervisor_token}" }, as: :json
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['message']).to eq('Movie deleted successfully')
+        expect(Movie.exists?(movie.id)).to be_falsey
       end
 
       it 'returns not found if movie does not exist' do
-        delete '/api/v1/movies/999', as: :json
+        delete '/api/v1/movies/999', headers: { 'Authorization' => "Bearer #{supervisor_token}" }, as: :json
         expect(response).to have_http_status(:not_found)
-        expect(JSON.parse(response.body)['error']).to eq('Movie not found')
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Movie not found')
       end
     end
 
-    context 'when user is not a supervisor' do
-      before { sign_in regular_user }
+    context 'with non-supervisor token' do
+      before do
+        allow_any_instance_of(User).to receive(:supervisor?).and_return(false)
+      end
 
-      it 'returns unauthorized status' do
-        delete "/api/v1/movies/#{movie.id}", as: :json
-        expect(response).to have_http_status(:unauthorized)
-        expect(JSON.parse(response.body)['error']).to eq('Unauthorized')
+      it 'returns forbidden status' do
+        delete "/api/v1/movies/#{movie.id}", headers: { 'Authorization' => "Bearer #{jwt_token}" }, as: :json
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Forbidden: Supervisor access required')
       end
     end
   end

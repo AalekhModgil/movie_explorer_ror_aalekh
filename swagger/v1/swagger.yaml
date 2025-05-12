@@ -1,4 +1,3 @@
----
 openapi: 3.0.1
 info:
   title: API V1
@@ -463,6 +462,8 @@ paths:
       summary: Fetch a movie by ID
       tags:
       - Movies
+      security:
+      - BearerAuth: []
       parameters:
       - name: id
         in: path
@@ -477,8 +478,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Movie'
-        '404':
-          description: Movie not found
+        '401':
+          description: Unauthorized access
           content:
             application/json:
               schema:
@@ -486,7 +487,17 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Movie not found"
+                    example: "No token provided. Please sign in."
+        '404':
+          description: Movie not found or access denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found or access denied"
     patch:
       summary: Update a movie
       tags:
