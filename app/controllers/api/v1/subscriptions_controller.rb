@@ -23,7 +23,8 @@ class Api::V1::SubscriptionsController < ApplicationController
                     "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}"
                   else
                     # For React Native (mobile) - use backend success endpoint
-                    "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
+                    # "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
+                    "https://movie-explorer-ror-aalekh-2ewg.onrender.com/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
                   end
 
     session = Stripe::Checkout::Session.create(
