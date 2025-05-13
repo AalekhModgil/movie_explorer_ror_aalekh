@@ -38,7 +38,8 @@ class Api::V1::SubscriptionsController < ApplicationController
         client_type: client_type
       },
       success_url: success_url,
-      cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
+      # cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
+      cancel_url: "http://localhost:5173/cancel"
     )
 
     render json: { session_id: session.id, url: session.url }, status: :ok
