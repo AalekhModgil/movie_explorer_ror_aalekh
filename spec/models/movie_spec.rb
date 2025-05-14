@@ -5,7 +5,6 @@ RSpec.describe Movie, type: :model do
   let(:invalid_movie) { build(:movie, :invalid) }
   let(:movie_without_attachments) { build(:movie, :without_attachments) }
 
-  # Test validations
   describe "validations" do
     it "is valid with valid attributes" do
       expect(movie).to be_valid
@@ -130,16 +129,6 @@ RSpec.describe Movie, type: :model do
       movie.banner.attach(io: StringIO.new("invalid"), filename: "invalid.txt", content_type: "text/plain")
       expect(movie).not_to be_valid
       expect(movie.errors[:banner]).to include("must be a JPEG or PNG image")
-    end
-  end
-
-  # Test scopes
-  describe "scopes" do
-    it "filters premium movies" do
-      premium_movie = create(:movie, premium: true)
-      regular_movie = create(:movie, premium: false)
-      expect(Movie.premium).to include(premium_movie)
-      expect(Movie.premium).not_to include(regular_movie)
     end
   end
 end

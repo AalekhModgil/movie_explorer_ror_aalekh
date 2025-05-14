@@ -11,20 +11,17 @@ class Api::V1::SubscriptionsController < ApplicationController
 
     price_id = case plan_type
                when '1_day'
-                 'price_1RM3MPPwmKg08vVsB1ub3R60'
+                 ENV['STRIPE_PRICE_1_DAY']
                when '7_days'
-                 'price_1RM3NlPwmKg08vVshuxW8mRT'
+                 ENV['STRIPE_PRICE_7_DAYS']
                when '1_month'
-                 'price_1RM3OkPwmKg08vVs1Vk2DSu8'
+                 ENV['STRIPE_PRICE_1_MONTH']
                end
 
     success_url = if client_type == 'web'
-                    # For React JS (web)
-                    "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}"
+                    "#{ENV['WEB_SUCCESS_URL']}?session_id={CHECKOUT_SESSION_ID}"
                   else
-                    # For React Native (mobile) - use backend success endpoint
-                    # "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
-                    "https://movie-explorer-ror-aalekh-2ewg.onrender.com/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
+                    "#{ENV['MOBILE_SUCCESS_URL']}?session_id={CHECKOUT_SESSION_ID}"
                   end
 
     session = Stripe::Checkout::Session.create(
@@ -38,8 +35,7 @@ class Api::V1::SubscriptionsController < ApplicationController
         client_type: client_type
       },
       success_url: success_url,
-      # cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
-      cancel_url: "http://localhost:5173/cancel"
+      cancel_url: ENV['CANCEL_URL']
     )
 
     render json: { session_id: session.id, url: session.url }, status: :ok

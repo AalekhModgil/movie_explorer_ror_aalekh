@@ -100,3 +100,5 @@ gem "fcm"
 
 gem "httparty"
 gem "googleauth"
+
+gem 'simplecov'

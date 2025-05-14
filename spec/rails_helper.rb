@@ -1,5 +1,12 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
+require 'simplecov'
+SimpleCov.start 'rails' do
+  add_filter '/spec/'          # Ignore test files
+  add_filter '/config/'        # Ignore config files
+  add_filter '/vendor/'        # Ignore vendor files
+  minimum_coverage 90          # Warn if coverage <90%
+end
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
 # Prevent database truncation if the environment is production
