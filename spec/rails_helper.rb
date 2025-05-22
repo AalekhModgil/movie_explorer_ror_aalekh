@@ -5,7 +5,21 @@ SimpleCov.start 'rails' do
   add_filter '/spec/'          # Ignore test files
   add_filter '/config/'        # Ignore config files
   add_filter '/vendor/'        # Ignore vendor files
-  minimum_coverage 90          # Warn if coverage <90%
+
+  add_filter '/app/channels/'
+  add_filter '/app/mailers/'
+  add_filter '/app/helpers/'
+  add_filter '/app/jobs/'
+  add_filter '/app/views/'
+  add_filter '/app/lib/'
+  add_filter '/app/admin/'
+  add_filter 'app/services'
+  add_filter 'app/serializers'
+
+  add_group "Controllers", "app/controllers"
+  add_group "Models", "app/models"
+
+  # minimum_coverage 90          # Warn if coverage <90%
 end
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'

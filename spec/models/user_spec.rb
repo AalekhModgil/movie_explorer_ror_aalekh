@@ -66,17 +66,64 @@ RSpec.describe User, type: :model do
       expect(duplicate_user.errors[:email]).to include("has already been taken")
     end
 
-    it "is not valid without a password" do
-      user.password = nil
-      user.password_confirmation = nil
+    it "is not valid without a password on create" do
+      user = build(:user, password: nil, password_confirmation: nil)
       expect(user).not_to be_valid
       expect(user.errors[:password]).to include("can't be blank")
+    end
+
+    it "is valid without a password on update if password not changed" do
+      user = create(:user)
+      user.name = "Updated Name"
+      expect(user).to be_valid
+    end
+
+    it "is not valid with a password missing uppercase letter" do
+      user = build(:user, password: 'password1!', password_confirmation: 'password1!')
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
+    end
+
+    it "is not valid with a password missing lowercase letter" do
+      user = build(:user, password: 'PASSWORD1!', password_confirmation: 'PASSWORD1!')
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
+    end
+
+    it "is not valid with a password missing digit" do
+      user = build(:user, password: 'Password!', password_confirmation: 'Password!')
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
+    end
+
+    it "is not valid with a password missing special character" do
+      user = build(:user, password: 'Password1', password_confirmation: 'Password1')
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
+    end
+
+    it "is not valid with a password shorter than 8 characters" do
+      user = build(:user, password: 'Pass1!', password_confirmation: 'Pass1!')
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
     end
 
     it "is not valid with invalid attributes" do
       expect(invalid_user).not_to be_valid
       expect(invalid_user.errors[:email]).to include("is invalid")
-      expect(invalid_user.errors[:password]).to include("can't be blank")
+      expect(invalid_user.errors[:password]).to include(
+        "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+      )
       expect(invalid_user.errors[:name]).to include("can't be blank", "is too short (minimum is 3 characters)")
       expect(invalid_user.errors[:mobile_number]).to include("can't be blank", "is invalid")
     end

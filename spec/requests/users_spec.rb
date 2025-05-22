@@ -23,7 +23,7 @@ RSpec.describe 'User Management API', type: :request do
           user: {
             name: 'John Doe',
             email: 'john@example.com',
-            password: 'password123',
+            password: 'Password123!',
             mobile_number: '+12345678901'
           }
         }
@@ -61,14 +61,14 @@ RSpec.describe 'User Management API', type: :request do
   end
 
   describe 'POST /users/sign_in (Login)' do
-    let!(:user_record) { create(:user, password: 'password123') }
+    let!(:user_record) { create(:user, password: 'Password123!') }
 
     context 'with correct credentials' do
       let(:valid_credentials) do
         {
           user: {
             email: user_record.email,
-            password: 'password123'
+            password: 'Password123!'
           }
         }
       end

@@ -24,6 +24,12 @@ class Api::V1::SubscriptionsController < ApplicationController
                     "#{ENV['MOBILE_SUCCESS_URL']}?session_id={CHECKOUT_SESSION_ID}"
                   end
 
+    cancel_url = if client_type == 'web'
+                   "#{ENV['CANCEL_URL']}" # https://movie-explorer-reactjs-sparsh-yadav.vercel.app/cancel
+                 else
+                   "#{ENV['MOBILE_CANCEL_URL']}"
+                 end
+
     session = Stripe::Checkout::Session.create(
       customer: subscription.stripe_customer_id,
       payment_method_types: ['card'],
@@ -35,7 +41,7 @@ class Api::V1::SubscriptionsController < ApplicationController
         client_type: client_type
       },
       success_url: success_url,
-      cancel_url: ENV['CANCEL_URL']
+      cancel_url: cancel_url
     )
 
     render json: { session_id: session.id, url: session.url }, status: :ok
