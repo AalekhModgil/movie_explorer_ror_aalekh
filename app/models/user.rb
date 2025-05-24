@@ -1,5 +1,8 @@
 class User < ApplicationRecord
   has_one :subscription, dependent: :destroy
+  has_many :watchlists, dependent: :destroy
+  has_many :watchlist_movies, through: :watchlists, source: :movie
+
   after_create :create_default_subscription
   include Devise::JWT::RevocationStrategies::JTIMatcher
 
@@ -11,11 +14,10 @@ class User < ApplicationRecord
   validates :name, presence: true, length: { maximum: 100, minimum: 3 }
   validates :mobile_number, presence: true, format: { with: /\A(\+?[1-9]\d{0,3})?\d{9,14}\z/ }, uniqueness: true
   validates :email, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-
   validates :password, presence: true, format: { 
-  with: /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}\z/,
-  message: "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
-}, if: :password_required?
+    with: /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}\z/,
+    message: "The password must include at least one uppercase letter, one lowercase letter, one digit, one special character, and have a minimum of 8 characters."
+  }, if: :password_required?
 
   scope :by_role, ->(role) { where(role: role) }
   scope :recent, -> { order(created_at: :desc) }
@@ -27,8 +29,9 @@ class User < ApplicationRecord
   def self.ransackable_attributes(auth_object = nil)
     ["created_at", "email", "id", "name", "mobile_number", "role", "updated_at"]
   end
+
   def self.ransackable_associations(auth_object = nil)
-    [] 
+    ["subscription", "watchlists", "watchlist_movies"]
   end
 
   def create_default_subscription

@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :movies, only: [:index, :show, :create, :update, :destroy]
+      resources :watchlists, only: [:index, :create, :destroy]
       get 'current_user', to: 'users#current'
       resources :subscriptions, only: [:create]
       get 'subscriptions/success', to: 'subscriptions#success'

@@ -1,6 +1,8 @@
 class Movie < ApplicationRecord
   has_one_attached :poster
   has_one_attached :banner
+  has_many :watchlists, dependent: :destroy
+  has_many :watchlisted_by_users, through: :watchlists, source: :user
 
   validates :title, presence: true
   validates :genre, presence: true
@@ -14,7 +16,7 @@ class Movie < ApplicationRecord
   validate :poster_content_type, if: :poster_attached?
   validate :banner_content_type, if: :banner_attached?
 
-  scope :accessible_to_user, ->(user) { user&.subscription&.plan_type == 'premium'  ? all : where(premium: false) }
+  scope :accessible_to_user, ->(user) { user&.subscription&.plan_type == 'premium' ? all : where(premium: false) }
 
   def poster_attached?
     poster.attached?
@@ -43,6 +45,6 @@ class Movie < ApplicationRecord
   end
 
   def self.ransackable_associations(auth_object = nil)
-    ["banner_attachment", "banner_blob", "poster_attachment", "poster_blob"]
+    ["banner_attachment", "banner_blob", "poster_attachment", "poster_blob", "watchlists", "watchlisted_by_users"]
   end
 end

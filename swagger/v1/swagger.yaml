@@ -659,6 +659,169 @@ paths:
                   error:
                     type: string
                     example: "Movie not found"
+  "/api/v1/watchlists":
+    get:
+      summary: List watchlist movies
+      tags:
+      - Watchlists
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Watchlist retrieved successfully or empty
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Watchlist retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Movie'
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No token provided. Please sign in."
+    post:
+      summary: Add a movie to watchlist
+      tags:
+      - Watchlists
+      security:
+      - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movie_id:
+                  type: integer
+                  description: ID of the movie to add to watchlist
+              required:
+              - movie_id
+      responses:
+        '201':
+          description: Movie added to watchlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie added to watchlist"
+                  data:
+                    $ref: '#/components/schemas/Movie'
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No token provided. Please sign in."
+        '403':
+          description: Movie not accessible to subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Movie is not accessible to your subscription"
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Movie not found"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  "/api/v1/watchlists/{id}":
+    delete:
+      summary: Remove a movie from watchlist
+      tags:
+      - Watchlists
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        description: ID of the movie to remove from watchlist
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Movie removed from watchlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie removed from watchlist"
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No token provided. Please sign in."
+        '404':
+          description: Movie not found in watchlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found in your watchlist"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
   "/api/v1/subscriptions":
     post:
       summary: Create a subscription
@@ -854,6 +1017,14 @@ components:
         updated_at:
           type: string
           format: date-time
+        poster_url:
+          type: string
+          nullable: true
+          description: URL of the movie poster (Cloudinary)
+        banner_url:
+          type: string
+          nullable: true
+          description: URL of the movie banner (Cloudinary)
       required:
       - id
       - title
