@@ -1,6 +1,6 @@
 class MovieSerializer < ActiveModel::Serializer
   attributes :id, :title, :genre, :release_year, :rating, :director, :duration, :description, :premium,:main_lead,:streaming_platform, :poster_url, :banner_url
-
+  has_many :celebrities
   def poster_url
     if object.poster.attached?
       object.poster.service.url(object.poster.key, eager: true) 

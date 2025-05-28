@@ -944,11 +944,10 @@ paths:
               schema:
                 type: object
                 properties:
-                 
-
                   error:
                     type: string
                     example: "No token provided. Please sign in."
+  "/api/v1/subscriptions":
     get:
       summary: Fetch current user's subscription
       tags:
@@ -1009,21 +1008,24 @@ paths:
               schema:
                 type: object
                 properties:
-                  celebrities:
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/Celebrity'
-                  pagination:
+                  meta:
                     type: object
                     properties:
-                      current_page:
-                        type: integer
-                      total_pages:
-                        type: integer
-                      total_count:
-                        type: integer
-                      per_page:
-                        type: integer
+                      pagination:
+                        type: object
+                        properties:
+                          current_page:
+                            type: integer
+                          total_pages:
+                            type: integer
+                          total_count:
+                            type: integer
+                          per_page:
+                            type: integer
         '404':
           description: No celebrities found
           content:
@@ -1031,9 +1033,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "No celebrities found"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "No celebrities found"
     post:
       summary: Create a new celebrity
       tags:
@@ -1063,12 +1067,44 @@ paths:
                   type: string
                   format: binary
                   description: Image file of the celebrity (JPEG or PNG)
+                celebrity[movie_ids][]:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of movie IDs to associate with the celebrity (optional). Each ID must be sent as a separate field using `celebrity[movie_ids][]=id` (e.g., `celebrity[movie_ids][]=169`).
               required:
               - celebrity[name]
               - celebrity[birth_date]
               - celebrity[nationality]
               - celebrity[biography]
               - celebrity[image]
+            examples:
+              create_with_movie_ids:
+                value:
+                  celebrity[name]: "Scarlett Johansson"
+                  celebrity[birth_date]: "1984-11-22"
+                  celebrity[nationality]: "American"
+                  celebrity[biography]: "Scarlett Johansson is known for her roles in the Marvel Cinematic Universe, Lost in Translation, and Marriage Story."
+                  celebrity[movie_ids][]: 169
+              create_with_multiple_movie_ids:
+                value:
+                  celebrity[name]: "John Doe"
+                  celebrity[birth_date]: "1975-01-01"
+                  celebrity[nationality]: "American"
+                  celebrity[biography]: "Famous actor known for action movies."
+                  celebrity[movie_ids][]: 1
+                  celebrity[movie_ids][]: 2
+            x-example-curl: |
+              curl -X POST http://localhost:3000/api/v1/celebrities \
+                -H "Authorization: Bearer <your_jwt_token>" \
+                -H "Content-Type: multipart/form-data" \
+                -F "celebrity[name]=Scarlett Johansson" \
+                -F "celebrity[birth_date]=1984-11-22" \
+                -F "celebrity[nationality]=American" \
+                -F "celebrity[biography]=Scarlett Johansson is known for her roles in the Marvel Cinematic Universe, Lost in Translation, and Marriage Story." \
+                -F "celebrity[image]=@scarlett.jpg;type=image/jpeg" \
+                -F "celebrity[movie_ids][]=1" \
+                -F "celebrity[movie_ids][]=2"
       responses:
         '201':
           description: Celebrity created successfully
@@ -1113,6 +1149,13 @@ paths:
                     type: array
                     items:
                       type: string
+              examples:
+                invalid_movie_ids:
+                  value:
+                    errors: ["Invalid movie_ids: 168"]
+                invalid_attributes:
+                  value:
+                    errors: ["Name can't be blank", "Biography is too long (maximum is 1000 characters)"]
   "/api/v1/celebrities/{id}":
     get:
       summary: Fetch a celebrity by ID
@@ -1139,9 +1182,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Celebrity not found"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Celebrity not found"
     patch:
       summary: Update a celebrity
       tags:
@@ -1178,6 +1223,31 @@ paths:
                   type: string
                   format: binary
                   description: Image file of the celebrity (JPEG or PNG)
+                celebrity[movie_ids][]:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of movie IDs to associate with the celebrity (optional). Each ID must be sent as a separate field using `celebrity[movie_ids][]=id` (e.g., `celebrity[movie_ids][]=169`).
+                celebrity[remove_movie_ids][]:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of movie IDs to disassociate from the celebrity (optional). Each ID must be sent as a separate field using `celebrity[remove_movie_ids][]=id` (e.g., `celebrity[remove_movie_ids][]=146`).
+            examples:
+              update_with_movie_ids:
+                value:
+                  celebrity[movie_ids][]: 169
+              update_with_multiple_remove_movie_ids:
+                value:
+                  celebrity[remove_movie_ids][]: 146
+                  celebrity[remove_movie_ids][]: 169
+            x-example-curl: |
+              curl -X PATCH http://localhost:3000/api/v1/celebrities/15 \
+                -H "accept: application/json" \
+                -H "Authorization: Bearer <your_jwt_token>" \
+                -H "Content-Type: multipart/form-data" \
+                -F "celebrity[remove_movie_ids][]=146" \
+                -F "celebrity[remove_movie_ids][]=169"
       responses:
         '200':
           description: Celebrity updated successfully
@@ -1212,9 +1282,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Celebrity not found"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Celebrity not found"
         '422':
           description: Invalid request
           content:
@@ -1226,6 +1298,22 @@ paths:
                     type: array
                     items:
                       type: string
+              examples:
+                invalid_movie_ids:
+                  value:
+                    errors: ["Invalid movie_ids: 168"]
+                duplicate_movie_ids:
+                  value:
+                    errors: ["Movie IDs already associated: 1"]
+                invalid_remove_movie_ids:
+                  value:
+                    errors: ["Invalid remove_movie_ids: 999"]
+                unassociated_remove_movie_ids:
+                  value:
+                    errors: ["Cannot remove unassociated movie IDs: 4"]
+                invalid_attributes:
+                  value:
+                    errors: ["Biography is too long (maximum is 1000 characters)"]
     delete:
       summary: Delete a celebrity
       tags:
@@ -1277,9 +1365,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Celebrity not found"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Celebrity not found"
 servers:
 - url: http://localhost:3000
   description: Local server
@@ -1397,6 +1487,11 @@ components:
           type: string
           nullable: true
           description: URL of the celebrity image (Cloudinary)
+        movies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movie'
+          description: List of movies associated with the celebrity
         created_at:
           type: string
           format: date-time

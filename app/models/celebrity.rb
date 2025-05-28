@@ -1,5 +1,7 @@
 class Celebrity < ApplicationRecord
   has_one_attached :image
+  has_many :celebrity_movies, dependent: :destroy
+  has_many :movies, through: :celebrity_movies
 
   validates :name, presence: true
   validates :birth_date, presence: true
@@ -7,6 +9,7 @@ class Celebrity < ApplicationRecord
   validates :biography, presence: true, length: { maximum: 1000 }
   validates :image, presence: true
   validate :image_content_type, if: :image_attached?
+  validate :valid_movie_ids, if: -> { movie_ids.present? }
 
   def age
     return unless birth_date
@@ -35,4 +38,10 @@ class Celebrity < ApplicationRecord
       errors.add(:image, 'must be a JPEG or PNG image')
     end
   end
+
+  def valid_movie_ids
+    invalid_ids = movie_ids - Movie.where(id: movie_ids).pluck(:id)
+    errors.add(:movie_ids, "contains invalid IDs: #{invalid_ids.join(', ')}") if invalid_ids.any?
+  end
+
 end

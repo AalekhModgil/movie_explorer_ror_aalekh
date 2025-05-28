@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_26_054919) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_27_123155) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -71,6 +71,15 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_26_054919) do
     t.text "biography", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "celebrity_movies", force: :cascade do |t|
+    t.bigint "celebrity_id", null: false
+    t.bigint "movie_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["celebrity_id", "movie_id"], name: "index_celebrity_movies_on_celebrity_id_and_movie_id", unique: true
+    t.index ["movie_id"], name: "index_celebrity_movies_on_movie_id"
   end
 
   create_table "jwt_blacklists", force: :cascade do |t|
@@ -134,6 +143,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_26_054919) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "celebrity_movies", "celebrities"
+  add_foreign_key "celebrity_movies", "movies"
   add_foreign_key "subscriptions", "users"
   add_foreign_key "watchlists", "movies"
   add_foreign_key "watchlists", "users"

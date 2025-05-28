@@ -3,6 +3,8 @@ class Movie < ApplicationRecord
   has_one_attached :banner
   has_many :watchlists, dependent: :destroy
   has_many :watchlisted_by_users, through: :watchlists, source: :user
+  has_many :celebrity_movies, dependent: :destroy
+  has_many :celebrities, through: :celebrity_movies
 
   validates :title, presence: true
   validates :genre, presence: true
