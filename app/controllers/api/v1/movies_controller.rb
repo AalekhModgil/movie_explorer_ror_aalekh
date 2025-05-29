@@ -8,6 +8,7 @@ module Api
       def index
         movies = Movie.all
 
+        # Apply existing filters
         if params[:title].present?
           movies = movies.where("title ILIKE ?", "%#{params[:title]}%")
         end
@@ -16,6 +17,20 @@ module Api
           movies = movies.where(genre: params[:genre])
         end
 
+        # Dynamic sorting
+        if params[:sort_by].present?
+          sort_field = params[:sort_by].downcase
+          sort_direction = params[:sort_direction]&.downcase == "asc" ? :asc : :desc
+
+          valid_sort_fields = %w[rating release_year]
+          if valid_sort_fields.include?(sort_field)
+            movies = movies.order(sort_field => sort_direction)
+          else
+            render json: { error: "Invalid sort_by parameter. Allowed values: #{valid_sort_fields.join(', ')}" }, status: :bad_request and return
+          end
+        end
+
+        # Apply pagination
         movies = movies.page(params[:page] || 1).per(params[:per_page] || 10)
 
         if movies.empty?
@@ -87,7 +102,7 @@ module Api
       def movie_params
         params.require(:movie).permit(
           :title, :genre, :release_year, :rating, :director,
-          :duration, :description,:main_lead,:streaming_platform, :premium, :poster, :banner
+          :duration, :description, :main_lead, :streaming_platform, :premium, :poster, :banner
         )
       end
 

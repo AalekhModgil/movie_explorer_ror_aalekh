@@ -82,9 +82,16 @@ class Api::V1::SubscriptionsController < ApplicationController
     end
     if subscription.plan_type == 'premium' && subscription.expires_at.present? && subscription.expires_at < Time.current
       subscription.update(plan_type: 'basic', status: 'active', expires_at: nil)
-      render json: { plan_type: 'basic', message: 'Your subscription has expired. Downgrading to basic plan.' }, status: :ok
+      render json: {
+        plan_type: 'basic',
+        expires_at: nil,
+        message: 'Your subscription has expired. Downgrading to basic plan.'
+      }, status: :ok
     else
-      render json: { plan_type: subscription.plan_type }, status: :ok
+      render json: {
+        plan_type: subscription.plan_type,
+        expires_at: subscription.expires_at
+      }, status: :ok
     end
   end
 
