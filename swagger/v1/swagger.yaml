@@ -1063,10 +1063,18 @@ paths:
                 celebrity[biography]:
                   type: string
                   description: Biography of the celebrity (max 1000 characters)
+                celebrity[role]:
+                  type: string
+                  description: Role of the celebrity
+                  enum: ["actor", "director", "writer"]
                 celebrity[image]:
                   type: string
                   format: binary
                   description: Image file of the celebrity (JPEG or PNG)
+                celebrity[banner]:
+                  type: string
+                  format: binary
+                  description: Banner image file of the celebrity (JPEG or PNG)
                 celebrity[movie_ids][]:
                   type: array
                   items:
@@ -1077,6 +1085,7 @@ paths:
               - celebrity[birth_date]
               - celebrity[nationality]
               - celebrity[biography]
+              - celebrity[role]
               - celebrity[image]
             examples:
               create_with_movie_ids:
@@ -1085,6 +1094,7 @@ paths:
                   celebrity[birth_date]: "1984-11-22"
                   celebrity[nationality]: "American"
                   celebrity[biography]: "Scarlett Johansson is known for her roles in the Marvel Cinematic Universe, Lost in Translation, and Marriage Story."
+                  celebrity[role]: "actor"
                   celebrity[movie_ids][]: 169
               create_with_multiple_movie_ids:
                 value:
@@ -1092,6 +1102,7 @@ paths:
                   celebrity[birth_date]: "1975-01-01"
                   celebrity[nationality]: "American"
                   celebrity[biography]: "Famous actor known for action movies."
+                  celebrity[role]: "actor"
                   celebrity[movie_ids][]: 1
                   celebrity[movie_ids][]: 2
             x-example-curl: |
@@ -1102,7 +1113,9 @@ paths:
                 -F "celebrity[birth_date]=1984-11-22" \
                 -F "celebrity[nationality]=American" \
                 -F "celebrity[biography]=Scarlett Johansson is known for her roles in the Marvel Cinematic Universe, Lost in Translation, and Marriage Story." \
+                -F "celebrity[role]=actor" \
                 -F "celebrity[image]=@scarlett.jpg;type=image/jpeg" \
+                -F "celebrity[banner]=@scarlett_banner.jpg;type=image/jpeg" \
                 -F "celebrity[movie_ids][]=1" \
                 -F "celebrity[movie_ids][]=2"
       responses:
@@ -1135,9 +1148,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Forbidden: Supervisor access required"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Forbidden: Supervisor access required"
         '422':
           description: Invalid request
           content:
@@ -1155,7 +1170,7 @@ paths:
                     errors: ["Invalid movie_ids: 168"]
                 invalid_attributes:
                   value:
-                    errors: ["Name can't be blank", "Biography is too long (maximum is 1000 characters)"]
+                    errors: ["Name can't be blank", "Biography is too long (maximum is 1000 characters)", "Role is not a valid role"]
   "/api/v1/celebrities/{id}":
     get:
       summary: Fetch a celebrity by ID
@@ -1219,10 +1234,18 @@ paths:
                 celebrity[biography]:
                   type: string
                   description: Biography of the celebrity (max 1000 characters)
+                celebrity[role]:
+                  type: string
+                  description: Role of the celebrity
+                  enum: ["actor", "director", "writer"]
                 celebrity[image]:
                   type: string
                   format: binary
                   description: Image file of the celebrity (JPEG or PNG)
+                celebrity[banner]:
+                  type: string
+                  format: binary
+                  description: Banner image file of the celebrity (JPEG or PNG)
                 celebrity[movie_ids][]:
                   type: array
                   items:
@@ -1237,17 +1260,21 @@ paths:
               update_with_movie_ids:
                 value:
                   celebrity[movie_ids][]: 169
+                  celebrity[role]: "director"
               update_with_multiple_remove_movie_ids:
                 value:
                   celebrity[remove_movie_ids][]: 146
                   celebrity[remove_movie_ids][]: 169
+                  celebrity[role]: "writer"
             x-example-curl: |
               curl -X PATCH http://localhost:3000/api/v1/celebrities/15 \
                 -H "accept: application/json" \
                 -H "Authorization: Bearer <your_jwt_token>" \
                 -H "Content-Type: multipart/form-data" \
                 -F "celebrity[remove_movie_ids][]=146" \
-                -F "celebrity[remove_movie_ids][]=169"
+                -F "celebrity[remove_movie_ids][]=169" \
+                -F "celebrity[role]=writer" \
+                -F "celebrity[banner]=@new_banner.jpg;type=image/jpeg"
       responses:
         '200':
           description: Celebrity updated successfully
@@ -1272,9 +1299,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Forbidden: Supervisor access required"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Forbidden: Supervisor access required"
         '404':
           description: Celebrity not found
           content:
@@ -1313,7 +1342,7 @@ paths:
                     errors: ["Cannot remove unassociated movie IDs: 4"]
                 invalid_attributes:
                   value:
-                    errors: ["Biography is too long (maximum is 1000 characters)"]
+                    errors: ["Biography is too long (maximum is 1000 characters)", "Role is not a valid role"]
     delete:
       summary: Delete a celebrity
       tags:
@@ -1355,9 +1384,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: "Forbidden: Supervisor access required"
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                      example: "Forbidden: Supervisor access required"
         '404':
           description: Celebrity not found
           content:
@@ -1483,10 +1514,18 @@ components:
           type: string
         biography:
           type: string
+        role:
+          type: string
+          enum: ["actor", "director", "writer"]
+          description: Role of the celebrity
         image_url:
           type: string
           nullable: true
           description: URL of the celebrity image (Cloudinary)
+        banner_url:
+          type: string
+          nullable: true
+          description: URL of the celebrity banner (Cloudinary)
         movies:
           type: array
           items:
@@ -1504,4 +1543,5 @@ components:
       - birth_date
       - nationality
       - biography
+      - role
       - image_url

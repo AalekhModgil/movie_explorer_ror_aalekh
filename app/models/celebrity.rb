@@ -1,5 +1,6 @@
 class Celebrity < ApplicationRecord
   has_one_attached :image
+  has_one_attached :banner
   has_many :celebrity_movies, dependent: :destroy
   has_many :movies, through: :celebrity_movies
 
@@ -8,7 +9,9 @@ class Celebrity < ApplicationRecord
   validates :nationality, presence: true
   validates :biography, presence: true, length: { maximum: 1000 }
   validates :image, presence: true
+  validates :role, presence: true, inclusion: { in: %w[actor director writer], message: "%{value} is not a valid role" }
   validate :image_content_type, if: :image_attached?
+  validate :banner_content_type, if: :banner_attached?
   validate :valid_movie_ids, if: -> { movie_ids.present? }
 
   def age
@@ -20,11 +23,11 @@ class Celebrity < ApplicationRecord
   end
 
   def self.ransackable_associations(auth_object = nil)
-    ["image_attachment", "image_blob"]
+    ["image_attachment", "image_blob", "banner_attachment", "banner_blob"]
   end
 
   def self.ransackable_attributes(auth_object = nil)
-    ["name", "birth_date", "nationality", "biography", "created_at", "updated_at"]
+    ["name", "birth_date", "nationality", "biography", "role", "created_at", "updated_at"] # Add role
   end
 
   private
@@ -33,9 +36,19 @@ class Celebrity < ApplicationRecord
     image.attached?
   end
 
+  def banner_attached?
+    banner.attached?
+  end
+
   def image_content_type
     unless image.content_type.in?(%w[image/jpeg image/png])
       errors.add(:image, 'must be a JPEG or PNG image')
+    end
+  end
+
+  def banner_content_type
+    unless banner.content_type.in?(%w[image/jpeg image/png])
+      errors.add(:banner, 'must be a JPEG or PNG image')
     end
   end
 

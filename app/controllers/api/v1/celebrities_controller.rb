@@ -1,4 +1,3 @@
-# app/controllers/api/v1/celebrities_controller.rb
 module Api
   module V1
     class CelebritiesController < ApplicationController
@@ -42,8 +41,9 @@ module Api
       end
 
       def create
-        celebrity = Celebrity.new(celebrity_params.except(:image, :movie_ids))
+        celebrity = Celebrity.new(celebrity_params.except(:image, :banner, :movie_ids)) # Add banner
         attach_image(celebrity)
+        attach_banner(celebrity) # Add banner attachment
         if celebrity_params[:movie_ids].present?
           return render json: { errors: ["Invalid movie_ids: #{invalid_movie_ids(celebrity_params[:movie_ids]).join(', ')}"] }, status: :unprocessable_entity unless valid_movie_ids?(celebrity_params[:movie_ids])
           celebrity.movie_ids = celebrity_params[:movie_ids]
@@ -64,6 +64,7 @@ module Api
           render json: { errors: ["Celebrity not found"] }, status: :not_found
         else
           attach_image(celebrity)
+          attach_banner(celebrity) # Add banner attachment
           current_movie_ids = celebrity.movie_ids
 
           # Handle adding movie_ids
@@ -84,7 +85,7 @@ module Api
             celebrity.movie_ids -= remove_ids
           end
 
-          if celebrity.update(celebrity_params.except(:movie_ids, :remove_movie_ids, :image))
+          if celebrity.update(celebrity_params.except(:movie_ids, :remove_movie_ids, :image, :banner)) # Add banner
             render json: CelebritySerializer.new(celebrity).as_json, status: :ok
           else
             render json: { errors: celebrity.errors.full_messages }, status: :unprocessable_entity
@@ -105,12 +106,18 @@ module Api
       private
 
       def celebrity_params
-        params.require(:celebrity).permit(:name, :birth_date, :nationality, :biography, :image, movie_ids: [], remove_movie_ids: [])
+        params.require(:celebrity).permit(:name, :birth_date, :nationality, :biography, :role, :image, :banner, movie_ids: [], remove_movie_ids: []) # Add role and banner
       end
 
       def attach_image(celebrity)
         if params[:celebrity][:image].present? && params[:celebrity][:image].is_a?(ActionDispatch::Http::UploadedFile)
           celebrity.image.attach(params[:celebrity][:image])
+        end
+      end
+
+      def attach_banner(celebrity)
+        if params[:celebrity][:banner].present? && params[:celebrity][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+          celebrity.banner.attach(params[:celebrity][:banner])
         end
       end
 
